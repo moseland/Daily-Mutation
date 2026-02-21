@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function fetchBroadcastData() {
     try {
         // Fetch JSON exported from main.py
-        const response = await fetch('../output/broadcast_data.json');
+        const response = await fetch('output/broadcast_data.json');
 
         if (!response.ok) {
             throw new Error('Network response was not ok');
