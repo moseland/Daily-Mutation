@@ -1,0 +1,25 @@
+services:
+  # The Pipeline Runner: Scrapes news and generates the broadcast audio
+  morning-mutation:
+    build: .
+    container_name: morning-mutation
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+      - ./assets/intro:/app/assets/intro:ro
+      - ./assets/commercials:/app/assets/commercials:ro
+      - ./config.yaml:/app/config.yaml:ro
+    restart: "no" # Runs once and exits. Use a cron job to start `docker compose up` daily.
+
+  # The Web Dashboard: Serves the static interface and generated audio
+  morning-mutation-web:
+    image: nginx:alpine
+    container_name: morning-mutation-web
+    ports:
+      - "37542:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html/frontend:ro
+      - ./output:/usr/share/nginx/html/output:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: always

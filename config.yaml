@@ -1,0 +1,44 @@
+news_sources:
+  - url: "https://www.fastcompany.com/latest/rss"
+    name: "Fast Company"
+  - url: "https://www.theverge.com/rss/index.xml"
+    name: "The Verge"
+  - url: "https://www.techradar.com/feeds.xml"
+    name: "TechRadar"
+  - url: "https://tldr.tech/api/rss/tech"
+    name: "TLDR Tech"
+  - url: "https://tldr.tech/api/rss/ai"
+    name: "TLDR AI"
+  - url: "https://tldr.tech/api/rss/webdev"
+    name: "TLDR WebDev"
+  - url: "https://feeds.npr.org/510289/podcast.xml"
+    name: "NPR News"
+
+scraper:
+  exclusion_keywords:
+    - "shopping deal"
+    - "last-minute deal"
+    - "clearance sale"
+    - "buying guide"
+    - "best of"
+    - "gift guide"
+    - "promo code"
+    - "discount code"
+
+llm:
+  provider: "openrouter"
+  summarizer_model: "google/gemini-2.5-flash-lite"
+  scriptwriter_model: "mistralai/mistral-small-creative"
+  proofreader_model: "meta-llama/llama-4-maverick"
+
+tts:
+  provider: "inworld"
+  character_name: "Carter"
+  weather_character_name: "Lauren"
+  model: "inworld-tts-1.5-mini"
+
+weather:
+  latitude: 34.7540
+  longitude: -77.4302
+  city: "Jacksonville"
+  state: "NC"

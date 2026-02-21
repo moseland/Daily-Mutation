@@ -1,0 +1,11 @@
+newspaper3k
+lxml_html_clean
+requests
+python-dotenv
+pydub
+scikit-learn
+litellm
+feedparser
+pyyaml
+python-dateutil
+curl-cffi
