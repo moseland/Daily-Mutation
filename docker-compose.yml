@@ -20,6 +20,6 @@ services:
       - "37542:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro  # Mapped to root so index.html works at /
-      - ./output:/usr/share/nginx/html/output:ro # Shared volume for generated audio/JSON
+      - ./output:/usr/share/nginx/output:ro  # Shared volume for generated audio/JSON (non-nested)
       - ./nginx-container.conf:/etc/nginx/conf.d/default.conf:ro
     restart: always
