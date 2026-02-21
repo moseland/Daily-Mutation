@@ -94,10 +94,30 @@ def generate_weather_script(weather_data, config=None, current_date=None):
             model=model,
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message.content.strip()
+        weather_script = response.choices[0].message.content.strip()
+        
+        # Pass 2: Proofreader to fix repetitions and AI quirks
+        proofreader_model = get_model_name(config, key='proofreader_model')
+        proof_prompt = f"""
+        You are a weather script editor. The following is a raw weather report for 'The Morning Mutation'. 
+        Your job is to fix any weird AI-isms, awkward repetitions, or trailing sentences.
+        Make it sound natural, upbeat, and punchy. Keep it in Fahrenheit.
+        End with "And back to you Igor."
+        
+        Raw Script:
+        {weather_script}
+        
+        Final Polished Script:
+        """
+        
+        proof_response = litellm.completion(
+            model=proofreader_model,
+            messages=[{"role": "user", "content": proof_prompt}]
+        )
+        return proof_response.choices[0].message.content.strip()
     except Exception as e:
         logger.error(f"Failed to generate weather script: {e}")
-        return f"And for the weather in {city}: expect {today['description']} with a high of {today['max_temp']} degrees Fahrenheit."
+        return f"And for the weather in {city}: expect {today['description']} with a high of {today['max_temp']} degrees Fahrenheit. And back to you Igor."
 
 def get_weather_broadcast(config, current_date=None):
     """

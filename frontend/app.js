@@ -90,128 +90,132 @@ function renderWeather(weather) {
 
     // Extended Forecast Section
     if (weather.upcoming && weather.upcoming.length > 0) {
-        html += `<div class="extended-forecast">
-            <h4>Later this week</h4>
-            <div class="forecast-grid">`;
+        // Filter out any upcoming days that match Today's date to avoid redundancy
+        const upcomingDays = weather.upcoming.filter(day => day.date !== weather.today.date);
 
-        weather.upcoming.forEach(day => {
-            const d = parseLocalDate(day.date);
-            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-            html += `
+        if (upcomingDays.length > 0) {
+            html += `<div class="extended-forecast">
+                <h4>Later this week</h4>
+                <div class="forecast-grid">`;
+
+            upcomingDays.forEach(day => {
+                const d = parseLocalDate(day.date);
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                html += `
                 <div class="forecast-day">
                     <span class="f-name">${dayName}</span>
                     <span class="f-temp">${Math.round(day.max_temp)}°F</span>
                     <span class="f-desc" title="${day.description}">${day.description}</span>
                 </div>
             `;
-        });
-
-        html += `</div></div>`;
-    }
-
-    container.innerHTML = html;
-}
-
-function renderFilters() {
-    const filtersContainer = document.getElementById('category-filters');
-    filtersContainer.innerHTML = '';
-
-    if (globalNewsData.length === 0) return;
-
-    // Extract unique categories from all clusters
-    const allCategories = new Set();
-    globalNewsData.forEach(item => {
-        if (item.categories && Array.isArray(item.categories)) {
-            item.categories.forEach(c => allCategories.add(c));
-        } else {
-            allCategories.add('World');
-        }
-    });
-    const categories = ['All', ...Array.from(allCategories).sort()];
-
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        const isActive = cat === currentFilter;
-        btn.className = `filter-btn ${isActive ? 'active' : ''}`;
-        btn.textContent = cat;
-        btn.onclick = () => {
-            currentFilter = cat;
-            renderFilters(); // Re-render to update active class
-            renderNewsFeed();
-        };
-        filtersContainer.appendChild(btn);
-    });
-}
-
-function renderNewsFeed() {
-    const feedContainer = document.getElementById('news-feed');
-    feedContainer.innerHTML = '';
-
-    const filteredNews = currentFilter === 'All'
-        ? globalNewsData
-        : globalNewsData.filter(item => {
-            const cats = item.categories || ['World'];
-            return cats.includes(currentFilter);
-        });
-
-    if (filteredNews.length === 0) {
-        feedContainer.innerHTML = '<div class="glass-panel feed-loader">No news found for today.</div>';
-        return;
-    }
-
-    filteredNews.forEach(cluster => {
-        // Create category block
-        const catBlock = document.createElement('div');
-        catBlock.className = 'category-block';
-
-        // Header: Show all categories as tags
-        const header = document.createElement('div');
-        header.className = 'category-tags';
-        const cats = cluster.categories || ['World'];
-        cats.forEach(c => {
-            const tag = document.createElement('span');
-            tag.className = 'category-tag';
-            tag.textContent = c;
-            header.appendChild(tag);
-        });
-        catBlock.appendChild(header);
-
-        // Card
-        const card = document.createElement('div');
-        card.className = 'news-card glass-panel';
-
-        // Summary text
-        const summary = document.createElement('div');
-        summary.className = 'news-summary';
-        // Parse markdown using marked.js
-        summary.innerHTML = marked.parse(cluster.summary);
-        card.appendChild(summary);
-
-        // Article Links
-        if (cluster.articles && cluster.articles.length > 0) {
-            const linksContainer = document.createElement('div');
-            linksContainer.className = 'article-links';
-
-            const linksHeader = document.createElement('h4');
-            linksHeader.textContent = 'Source Articles';
-            linksContainer.appendChild(linksHeader);
-
-            cluster.articles.forEach(article => {
-                if (article.url && article.title) {
-                    const link = document.createElement('a');
-                    link.className = 'article-link';
-                    link.href = article.url;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    link.textContent = article.title;
-                    linksContainer.appendChild(link);
-                }
             });
 
-            card.appendChild(linksContainer);
+            html += `</div></div>`;
         }
 
-        catBlock.appendChild(card);
-        feedContainer.appendChild(catBlock);
-    });
-}
+        container.innerHTML = html;
+    }
+
+    function renderFilters() {
+        const filtersContainer = document.getElementById('category-filters');
+        filtersContainer.innerHTML = '';
+
+        if (globalNewsData.length === 0) return;
+
+        // Extract unique categories from all clusters
+        const allCategories = new Set();
+        globalNewsData.forEach(item => {
+            if (item.categories && Array.isArray(item.categories)) {
+                item.categories.forEach(c => allCategories.add(c));
+            } else {
+                allCategories.add('World');
+            }
+        });
+        const categories = ['All', ...Array.from(allCategories).sort()];
+
+        categories.forEach(cat => {
+            const btn = document.createElement('button');
+            const isActive = cat === currentFilter;
+            btn.className = `filter-btn ${isActive ? 'active' : ''}`;
+            btn.textContent = cat;
+            btn.onclick = () => {
+                currentFilter = cat;
+                renderFilters(); // Re-render to update active class
+                renderNewsFeed();
+            };
+            filtersContainer.appendChild(btn);
+        });
+    }
+
+    function renderNewsFeed() {
+        const feedContainer = document.getElementById('news-feed');
+        feedContainer.innerHTML = '';
+
+        const filteredNews = currentFilter === 'All'
+            ? globalNewsData
+            : globalNewsData.filter(item => {
+                const cats = item.categories || ['World'];
+                return cats.includes(currentFilter);
+            });
+
+        if (filteredNews.length === 0) {
+            feedContainer.innerHTML = '<div class="glass-panel feed-loader">No news found for today.</div>';
+            return;
+        }
+
+        filteredNews.forEach(cluster => {
+            // Create category block
+            const catBlock = document.createElement('div');
+            catBlock.className = 'category-block';
+
+            // Header: Show all categories as tags
+            const header = document.createElement('div');
+            header.className = 'category-tags';
+            const cats = cluster.categories || ['World'];
+            cats.forEach(c => {
+                const tag = document.createElement('span');
+                tag.className = 'category-tag';
+                tag.textContent = c;
+                header.appendChild(tag);
+            });
+            catBlock.appendChild(header);
+
+            // Card
+            const card = document.createElement('div');
+            card.className = 'news-card glass-panel';
+
+            // Summary text
+            const summary = document.createElement('div');
+            summary.className = 'news-summary';
+            // Parse markdown using marked.js
+            summary.innerHTML = marked.parse(cluster.summary);
+            card.appendChild(summary);
+
+            // Article Links
+            if (cluster.articles && cluster.articles.length > 0) {
+                const linksContainer = document.createElement('div');
+                linksContainer.className = 'article-links';
+
+                const linksHeader = document.createElement('h4');
+                linksHeader.textContent = 'Source Articles';
+                linksContainer.appendChild(linksHeader);
+
+                cluster.articles.forEach(article => {
+                    if (article.url && article.title) {
+                        const link = document.createElement('a');
+                        link.className = 'article-link';
+                        link.href = article.url;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.textContent = article.title;
+                        linksContainer.appendChild(link);
+                    }
+                });
+
+                card.appendChild(linksContainer);
+            }
+
+            catBlock.appendChild(card);
+            feedContainer.appendChild(catBlock);
+        });
+    }

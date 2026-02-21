@@ -138,7 +138,9 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     2. Introduce each topic segment conversationally (for example: 'And today in AI...', 'Now let's check World news...').
     3. At the end of EACH segment, output the exact word [PAUSE] on a new line so we can insert a natural pause in the audio.
     4. Roughly halfway through the broadcast, between two segments, transition to the weather by saying exactly: "And let's go to Olivia for the weather." followed by the exact word [WEATHER_BREAK] on a new line. After [WEATHER_BREAK], continue with the rest of the news. DO NOT write the weather report yourself.
-    5. Do not include any sound effect cues, stage directions, or markdown bold/italics formatting. Output ONLY the spoken words and the [PAUSE] and [WEATHER_BREAK] markers.
+    5. QUALITY CONTROL: Prioritize high-value news. Avoid trivial "filler" articles like simple product comparisons (e.g., iPhone vs. iPhone) or shopping guides unless they are major industry news. 
+    6. JOKES & CONTEXT: If you make a joke about an article, you MUST have summarized or mentioned that specific article in the spoken script. Never make a joke about an article that is only listed in the source links.
+    7. Do not include any sound effect cues, stage directions, or markdown bold/italics formatting. Output ONLY the spoken words and the [PAUSE] and [WEATHER_BREAK] markers.
 
     News Summaries:
     {joined_summaries}
@@ -164,6 +166,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         CRITICAL PRONUNCIATION RULES:
         1. PHONETIC RESPELLING: For difficult or non-English names and terms, use phonetic respelling in the text so the AI says it correctly. 
            - EXAMPLE: Use "en-VID-ee-uh" instead of "NVIDIA".
+           - EXAMPLE: Use "EE-gore" instead of "Igor".
            - Use this sparingly—only for terms Igor consistently gets wrong.
         2. ACRONYMS: If an acronym should be read letter-by-letter, use hyphens between the letters (e.g., "I-C-E" or "N-A-S-A"). If it should be read as a word, leave it as is (e.g., "Laser").
         3. NUMBERS: Write out numbers if they sound better in a specific format (e.g., "twenty twenty-six" for the year 2026).

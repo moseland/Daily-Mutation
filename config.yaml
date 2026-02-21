@@ -24,6 +24,12 @@ scraper:
     - "gift guide"
     - "promo code"
     - "discount code"
+    - "comparison"
+    - "versus"
+    - "vs"
+    - "which should you buy"
+    - "deal of the day"
+    - "limited time offer"
 
 llm:
   provider: "openrouter"
