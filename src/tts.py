@@ -8,6 +8,7 @@ import logging
 import requests
 import base64
 import tempfile
+import re
 from pydub import AudioSegment
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,24 @@ def generate_audio(text, output_path, config=None, voice_override=None):
         "Content-Type": "application/json"
     }
     
-    valid_segments = [s for s in text.split('[PAUSE]') if s.strip()]
+    # Split by [PAUSE] using regex (case-insensitive, handles optional spaces or bolding)
+    # e.g., catch [PAUSE], [ pause ], **[PAUSE]**, etc.
+    pause_regex = re.compile(r'(\*?\[\s*PAUSE\s*\]\*?)', re.IGNORECASE)
+    
+    # We split and keep the parts. The regex above doesn't use capturing groups for everything 
+    # but we just want the segments between pauses.
+    raw_segments = pause_regex.split(text)
+    
+    # Filter out the markers and empty strings
+    valid_segments = []
+    for seg in raw_segments:
+        if not pause_regex.match(seg) and seg.strip():
+            # SAFETY STRIP: Remove any other bracketed text (like [WEATHER_BREAK]) 
+            # so the TTS doesn't say them literally.
+            clean_seg = re.sub(r'\[.*?\]', '', seg).strip()
+            if clean_seg:
+                valid_segments.append(clean_seg)
+                
     combined_audio = AudioSegment.empty()
     silence = AudioSegment.silent(duration=1500)
     

@@ -162,14 +162,16 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         Your job is to proofread and optimize the text for a Text-To-Speech (TTS) engine.
         
         CRITICAL PRONUNCIATION RULES:
-        1. PHONETIC RESPELLING: For difficult or non-English names and terms, use phonetic respelling in the text so the AI says it correctly (e.g., use "Zoh-ran Mam-dah-nee" instead of "Zohran Mamdani").
+        1. PHONETIC RESPELLING: For difficult or non-English names and terms, use phonetic respelling in the text so the AI says it correctly. 
+           - EXAMPLE: Use "en-VID-ee-uh" instead of "NVIDIA".
+           - Use this sparingly—only for terms Igor consistently gets wrong.
         2. ACRONYMS: If an acronym should be read letter-by-letter, use hyphens between the letters (e.g., "I-C-E" or "N-A-S-A"). If it should be read as a word, leave it as is (e.g., "Laser").
         3. NUMBERS: Write out numbers if they sound better in a specific format (e.g., "twenty twenty-six" for the year 2026).
         4. NO SYMBOLS: Remove or write out symbols like #, @, or & that the TTS might read literally as "hashtag" or "at sign" unless intended.
         5. CLEANUP: Remove random domain extensions (like ".com") unless they are part of a spoken brand name.
         6. FLOW: Fix jokes that trail off and ensure natural cadence. Keep the witty, sharp tone.
         
-        Do NOT remove the [PAUSE] or [WEATHER_BREAK] tags. They must remain exactly as they are.
+        Do NOT remove or modify the [PAUSE] or [WEATHER_BREAK] tags. They must remain exactly as they are on their own lines. Do NOT add markdown formatting like **bold** around them.
         Output ONLY the final spoken words and markers without markdown bold/italics or stage directions.
         
         Raw Script:
