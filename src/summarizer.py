@@ -117,6 +117,7 @@ def summarize_clusters(clusters, config=None):
 def generate_broadcast_script(summaries, config=None, current_date=None):
     """
     Takes the summarized topics and generates a cohesive broadcast script.
+    Includes a two-pass system to optimize for TTS pronunciation.
     """
     model = get_model_name(config, key='scriptwriter_model')
     proofreader_model = get_model_name(config, key='proofreader_model')
@@ -154,18 +155,22 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         )
         draft_script = draft_response.choices[0].message.content.strip()
         
-        # Pass 2: Proofreader
-        logger.info("Proofreading script for AI artifacts...")
+        # Pass 2: Proofreader for TTS Optimization
+        logger.info("Proofreading script for AI artifacts and TTS pronunciation...")
         proofread_prompt = f"""
         You are a meticulous broadcast script editor. The following is a raw script for 'The Morning Mutation with Igor'. 
-        Your job is to proofread and fix any weird AI-isms before it goes to the Text-To-Speech engine.
+        Your job is to proofread and optimize the text for a Text-To-Speech (TTS) engine.
         
-        Specifically:
-        1. Remove any random domain extensions (like ".com" spoken out loud where it doesn't make sense).
-        2. Fix jokes that trail off or don't make sense. Make sure the punchlines land.
-        3. Make the flow as natural as humanly possible, keeping the punchy, hilarious, witty tone intact.
-        4. Do NOT remove the [PAUSE] or [WEATHER_BREAK] tags. They must remain exactly as they are.
-        5. Output ONLY the final spoken words and markers without markdown bold/italics or stage directions.
+        CRITICAL PRONUNCIATION RULES:
+        1. PHONETIC RESPELLING: For difficult or non-English names and terms, use phonetic respelling in the text so the AI says it correctly (e.g., use "Zoh-ran Mam-dah-nee" instead of "Zohran Mamdani").
+        2. ACRONYMS: If an acronym should be read letter-by-letter, use hyphens between the letters (e.g., "I-C-E" or "N-A-S-A"). If it should be read as a word, leave it as is (e.g., "Laser").
+        3. NUMBERS: Write out numbers if they sound better in a specific format (e.g., "twenty twenty-six" for the year 2026).
+        4. NO SYMBOLS: Remove or write out symbols like #, @, or & that the TTS might read literally as "hashtag" or "at sign" unless intended.
+        5. CLEANUP: Remove random domain extensions (like ".com") unless they are part of a spoken brand name.
+        6. FLOW: Fix jokes that trail off and ensure natural cadence. Keep the witty, sharp tone.
+        
+        Do NOT remove the [PAUSE] or [WEATHER_BREAK] tags. They must remain exactly as they are.
+        Output ONLY the final spoken words and markers without markdown bold/italics or stage directions.
         
         Raw Script:
         {draft_script}
