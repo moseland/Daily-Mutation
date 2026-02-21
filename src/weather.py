@@ -54,7 +54,7 @@ def get_weather(latitude, longitude):
         logger.error(f"Failed to fetch weather: {e}")
         return None
 
-def generate_weather_script(weather_data, config=None):
+def generate_weather_script(weather_data, config=None, current_date=None):
     """
     Generates a conversational weather script using the LLM.
     Updated to include the 'Later this week' outlook in Fahrenheit.
@@ -73,9 +73,10 @@ def generate_weather_script(weather_data, config=None):
         
     prompt = f"""
     You are 'Olivia', the upbeat, energetic weather reporter on 'The Morning Mutation'. 
+    Today's date is {current_date if current_date else 'unknown'}.
     Write a short and fun weather update for {city}, {state}.
     
-    Current Forecast: {today['description']} with a high of {today['max_temp']}F and a low of {today['min_temp']}F.
+    Current Forecast (Today, {today['date']}): {today['description']} with a high of {today['max_temp']}F and a low of {today['min_temp']}F.
     
     Upcoming Outlook:
     {upcoming_str}
@@ -98,7 +99,7 @@ def generate_weather_script(weather_data, config=None):
         logger.error(f"Failed to generate weather script: {e}")
         return f"And for the weather in {city}: expect {today['description']} with a high of {today['max_temp']} degrees Fahrenheit."
 
-def get_weather_broadcast(config):
+def get_weather_broadcast(config, current_date=None):
     """
     Orchestrates fetching weather data and generating a conversational script.
     
@@ -113,4 +114,4 @@ def get_weather_broadcast(config):
     if data:
         data['city'] = config.get('weather', {}).get('city', '')
         data['state'] = config.get('weather', {}).get('state', '')
-    return generate_weather_script(data, config), data
+    return generate_weather_script(data, config, current_date=current_date), data

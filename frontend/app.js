@@ -9,6 +9,24 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchBroadcastData();
 });
 
+/**
+ * Parses a date string safely. 
+ * If it's a "YYYY-MM-DD" string, it treats it as local time instead of UTC 
+ * to prevent off-by-one errors in different timezones.
+ */
+function parseLocalDate(dateStr) {
+    if (!dateStr) return new Date();
+    // If it has 'T', it's already an ISO string with time info
+    if (dateStr.includes('T')) return new Date(dateStr);
+
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        // new Date(year, monthIndex, day)
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return new Date(dateStr);
+}
+
 async function fetchBroadcastData() {
     try {
         // Fetch JSON exported from main.py
@@ -30,7 +48,7 @@ async function fetchBroadcastData() {
 
 function renderUI(data) {
     // Render Date
-    const dateObj = new Date(data.date);
+    const dateObj = parseLocalDate(data.date);
     const dateStr = dateObj.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -77,7 +95,7 @@ function renderWeather(weather) {
             <div class="forecast-grid">`;
 
         weather.upcoming.forEach(day => {
-            const d = new Date(day.date);
+            const d = parseLocalDate(day.date);
             const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
             html += `
                 <div class="forecast-day">

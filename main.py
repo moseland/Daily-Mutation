@@ -69,7 +69,7 @@ def run_pipeline():
     news_script = generate_broadcast_script(summaries, config, current_date=current_date_str)
     
     # 4. Generate Weather Script
-    weather_script, weather_data = get_weather_broadcast(config)
+    weather_script, weather_data = get_weather_broadcast(config, current_date=current_date_str)
     
     # 5. Prepare Output Directory
     output_dir = "output"
