@@ -138,7 +138,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     2. Introduce each topic segment conversationally (for example: 'And today in AI...', 'Now let's check World news...').
     3. At the end of EACH segment, output the exact word [PAUSE] on a new line so we can insert a natural pause in the audio.
     4. Roughly halfway through the broadcast, between two segments, transition to the weather by saying exactly: "And let's go to Olivia for the weather." followed by the exact word [WEATHER_BREAK] on a new line. After [WEATHER_BREAK], continue with the rest of the news. DO NOT write the weather report yourself.
-    5. QUALITY CONTROL: Prioritize high-value news. Avoid trivial "filler" articles like simple product comparisons (e.g., iPhone vs. iPhone) or shopping guides unless they are major industry news. 
+    5. QUALITY CONTROL: Prioritize high-value news. ABSOLUTELY VOID any articles that are essentially shopping deals, sales promotions, or product "buying guides" (e.g., Dyson sales, iPhone comparisons, "Best Cyber Monday Deals"). These have ZERO value to the listener unless they are world-shaking industry news. If a category is mostly filled with shopping fluff, SKIP THAT CATEGORY entirely.
     6. JOKES & CONTEXT: If you make a joke about an article, you MUST have summarized or mentioned that specific article in the spoken script. Never make a joke about an article that is only listed in the source links.
     7. Do not include any sound effect cues, stage directions, or markdown bold/italics formatting. Output ONLY the spoken words and the [PAUSE] and [WEATHER_BREAK] markers.
 

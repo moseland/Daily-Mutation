@@ -102,7 +102,9 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         You are a weather script editor. The following is a raw weather report for 'The Morning Mutation'. 
         Your job is to fix any weird AI-isms, awkward repetitions, or trailing sentences.
         Make it sound natural, upbeat, and punchy. Keep it in Fahrenheit.
-        End with "And back to you Igor."
+        
+        CRITICAL: Output ONLY the spoken words. Do not include introductory text, markdown formatting, or labels like "Final Polished Script".
+        End with exactly: "And back to you Igor."
         
         Raw Script:
         {weather_script}
@@ -114,7 +116,13 @@ def generate_weather_script(weather_data, config=None, current_date=None):
             model=proofreader_model,
             messages=[{"role": "user", "content": proof_prompt}]
         )
-        return proof_response.choices[0].message.content.strip()
+        content = proof_response.choices[0].message.content.strip()
+        
+        # Cleanup: sometimes LLMs include the label despite instructions
+        if "Final Polished Script:" in content:
+            content = content.split("Final Polished Script:")[-1].strip()
+            
+        return content
     except Exception as e:
         logger.error(f"Failed to generate weather script: {e}")
         return f"And for the weather in {city}: expect {today['description']} with a high of {today['max_temp']} degrees Fahrenheit. And back to you Igor."

@@ -30,6 +30,16 @@ scraper:
     - "which should you buy"
     - "deal of the day"
     - "limited time offer"
+    - "on sale"
+    - "price drop"
+    - "save over"
+    - "best price"
+    - "shop now"
+    - "amazon deal"
+    - "dyson sale"
+    - "dyson deal"
+    - "shopping guide"
+    - "how to buy"
 
 llm:
   provider: "openrouter"
