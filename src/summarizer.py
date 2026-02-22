@@ -12,16 +12,25 @@ logger = logging.getLogger(__name__)
 
 def clean_llm_output(text):
     """
-    Removes common LLM conversational filler, labels, and markdown artifacts.
-    Ensures the script starts exactly where the dialogue starts.
+    Strips LLM intros, metadata, labels, and markdown from scripts.
+    Uses XML tag extraction for bulletproof chatter removal.
     """
     if not text:
         return ""
-    # Remove common lead-ins like "Here is the polished script:" or "Refined Script:"
-    text = re.sub(r'^(Final|Polished|Refined|Script|Here|Sure|The).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
-    # Remove markdown formatting (bold, italics) which TTS might try to interpret
+    
+    # BULLETPROOF EXTRACTION: Look for content strictly inside <script> tags
+    match = re.search(r'<script>(.*?)</script>', text, re.IGNORECASE | re.DOTALL)
+    if match:
+        text = match.group(1)
+    else:
+        # Fallback regex if the LLM forgets the tags
+        text = re.sub(r'^(Final|Polished|Refined|Script|Report|Here|Sure|The|Based|Correction|Optimized|Rules).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove markdown formatting (bold, italics) which TTS might try to interpret literally
     text = text.replace("**", "").replace("*", "").replace("__", "")
-    return text.strip()
+    
+    # Final trim to remove whitespace
+    return text.strip().strip('"').strip("'")
 
 def get_model_name(config=None, key='model'):
     """
@@ -188,7 +197,8 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         proof_system = (
             "You are a TTS editor. Your job is to make the script sound human and protect Igor's unique persona. \n"
             f"CALENDAR ADVISORY: Current server time is {current_date} (UTC). "
-            "Ensure the spoken day of the week is SATURDAY if the UTC time is early Sunday morning."
+            "Ensure the spoken day of the week is SATURDAY if the UTC time is early Sunday morning.\n"
+            "MANDATORY: You MUST wrap the entire spoken output inside <script> and </script> XML tags."
         )
         
         proof_prompt = f"""
@@ -198,9 +208,9 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         1. PRESERVE PERSONALITY: Keep the snark and the jokes.
         2. CALENDAR CHECK: It is currently Saturday night for the audience (early Sunday UTC). Fix any 'Happy Sunday' mentions to 'Saturday'.
         3. NO REPETITION: Ensure the second half doesn't repeat news from the first.
-        4. PHONETIC: Use 'E-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
+        4. PHONETIC: Use 'EE-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
         5. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines.
-        6. CLEANUP: Remove all markdown.
+        6. XML WRAPPING: You MUST wrap the final spoken script inside <script> and </script> tags. Do not put meta-commentary outside the tags.
         
         Raw Script:
         {draft_script}

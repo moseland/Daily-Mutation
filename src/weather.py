@@ -13,14 +13,18 @@ logger = logging.getLogger(__name__)
 def clean_llm_output(text):
     """
     Strips LLM intros, metadata, labels, and markdown from weather scripts.
-    Ensures the script starts exactly where the dialogue starts.
+    Uses XML tag extraction for bulletproof chatter removal.
     """
     if not text:
         return ""
     
-    # Remove common lead-ins and labels like "Refined Script:", "Here is the report:", etc.
-    # This regex looks for lines starting with common LLM labels followed by a colon
-    text = re.sub(r'^(Final|Polished|Refined|Script|Report|Here|Sure|The|Based|Correction).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    # BULLETPROOF EXTRACTION: Look for content strictly inside <script> tags
+    match = re.search(r'<script>(.*?)</script>', text, re.IGNORECASE | re.DOTALL)
+    if match:
+        text = match.group(1)
+    else:
+        # Fallback regex if the LLM forgets the tags
+        text = re.sub(r'^(Final|Polished|Refined|Script|Report|Here|Sure|The|Based|Correction|Optimized|Rules).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
     
     # Remove markdown formatting (bold, italics) which TTS might try to interpret literally
     text = text.replace("**", "").replace("*", "").replace("__", "")
@@ -131,24 +135,25 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         )
         weather_script = response.choices[0].message.content.strip()
         
-        # Pass 2: The Proofreader - Strict constraints to prevent meta-commentary
+        # Pass 2: The Proofreader - Strict constraints with XML requirement
         proof_system = (
             "You are a technical script formatter for a broadcast. Your job is to clean text for Text-To-Speech (TTS). "
             "CRITICAL: Output ONLY the spoken weather report. "
             "NEVER include introductory remarks (e.g., 'Here is the fixed script'). "
             "NEVER include labels or lists of changes made. "
-            "ENSURE the script starts with 'Thanks Igor!' and ends with 'Back to you Igor.'"
+            "ENSURE the script starts with 'Thanks Igor!' and ends with 'Back to you Igor.'\n"
+            "MANDATORY: You MUST wrap the entire spoken output inside <script> and </script> XML tags."
         )
         
         proof_response = litellm.completion(
             model=proofreader_model,
             messages=[
                 {"role": "system", "content": proof_system},
-                {"role": "user", "content": f"Please clean and optimize this weather script for TTS: {weather_script}"}
+                {"role": "user", "content": f"Please clean and optimize this weather script for TTS. Wrap the final script in <script> tags.\n\nRaw Script:\n{weather_script}"}
             ]
         )
         
-        # Apply the hardened cleaning utility to the result
+        # Apply the hardened XML cleaning utility to the result
         return clean_llm_output(proof_response.choices[0].message.content)
         
     except Exception as e:
