@@ -69,10 +69,10 @@ def get_weather(latitude, longitude):
 
 def generate_weather_script(weather_data, config=None, current_date=None):
     """
-    Generates Olivia's upbeat weather report.
+    Generates Olivia's upbeat weather report with personality and a 3-day outlook.
     """
     if not weather_data:
-        return "And looking at the weather... well, my sensors are down! Just check your phone. Back to you Igor."
+        return "Thanks Igor! Well, my weather satellite is currently being chased by space debris, so just look outside! Back to you Igor."
         
     from src.summarizer import get_model_name
     model = get_model_name(config, key='scriptwriter_model')
@@ -82,7 +82,6 @@ def generate_weather_script(weather_data, config=None, current_date=None):
     state = config.get("weather", {}).get("state", "")
     
     today = weather_data['today']
-    # Explicitly mapping date strings to help Olivia's internal calendar
     upcoming_data = weather_data['upcoming']
     
     upcoming_str = ""
@@ -90,28 +89,28 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         upcoming_str += f"- Date: {day['date']}, Conditions: {day['description']}, High: {day['max_temp']}F\n"
         
     system_instruction = (
-        "You are 'Olivia', the upbeat, qwirky, and fun weather reporter for 'The Morning Mutation'. "
-        "Output ONLY the spoken words. End exactly with 'And back to you Igor.' "
-        "PRONUNCIATION: Use 'EE-gore' for Igor."
+        "You are 'Olivia', the upbeat, bubbly, and high-energy weather reporter for 'The Morning Mutation'. "
+        "You are known for your sunny disposition even when the forecast is gloomy. Use fun adjectives! "
+        "MANDATORY OPENING: You MUST start with 'Thanks Igor!' "
+        "MANDATORY CLOSING: You MUST end with 'Back to you Igor.' "
+        f"TIMEZONE ADVISORY: The server clock says {current_date}. If it is early Sunday UTC, it is still SATURDAY for the audience. "
+        "Output ONLY the spoken words. No sound effects or directions."
     )
 
     user_prompt = f"""
-    Write a fun weather update for {city}, {state}.
+    Write a fun, personality-filled weather report for {city}, {state}.
     
-    CURRENT CONTEXT:
-    Today's Date: {current_date if current_date else 'unknown'}
+    DATA:
     Today's Forecast: {today['description']}, High {today['max_temp']}F, Low {today['min_temp']}F.
-    
-    UPCOMING OUTLOOK (Be chronologically accurate):
+    Next Two Days:
     {upcoming_str}
     
     RULES:
-    1. BE EXPLICIT WITH DAYS: Check the 'Today's Date' provided. If today is Saturday, then Tomorrow is Sunday. 
-       Do not skip days or mislabel the day of the week for the upcoming dates.
-    2. Focus on today first, then give a quick look at the next two specific dates.
-    3. Use Fahrenheit only. NO introductory fluff like 'Here is the weather'.
-    4. Always start with 'Thank you Igor.'
-    5. Always end with 'And back to you Igor.'
+    1. 3-DAY OUTLOOK: You must explicitly cover today's weather AND the weather for the next two dates provided. 
+    2. CHRONOLOGY: Use the dates to name the days correctly. If today is Saturday, tomorrow is Sunday, and the day after is Monday.
+    3. PERSONALITY: Be bubbly! Use phrases like 'grab your umbrellas' or 'soak up that vitamin D'.
+    4. NO INTRO: Start immediately with 'Thanks Igor!'.
+    5. Back to you Igor: End exactly with that phrase.
     """
     
     try:
@@ -125,8 +124,9 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         weather_script = response.choices[0].message.content.strip()
         
         proof_system = (
-            "You are a weather script editor. Verify that the days of the week match the dates provided "
-            "based on the current date. Strip all intros and labels. Output ONLY the spoken report."
+            "You are a script editor. Ensure Olivia sounds bubbly and energetic. "
+            "Check that she opens with 'Thanks Igor!' and ends with 'Back to you Igor.' "
+            "Verify that she covers all three days of data provided."
         )
         
         proof_response = litellm.completion(
@@ -140,7 +140,7 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         return clean_llm_output(proof_response.choices[0].message.content)
     except Exception as e:
         logger.error(f"Failed to generate weather script: {e}")
-        return f"And for the weather in {city}: expect {today['description']} with a high of {today['max_temp']} degrees Fahrenheit. And back to you Igor."
+        return f"Thanks Igor! Today in {city} expect {today['description']} with a high of {today['max_temp']}. Back to you Igor."
 
 def get_weather_broadcast(config, current_date=None):
     lat = config.get('weather', {}).get('latitude', 40.7128)

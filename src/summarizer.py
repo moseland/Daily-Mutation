@@ -144,11 +144,13 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     joined_summaries = "\n---\n".join([f"CATEGORIES: {', '.join(s['categories'])}\nSUMMARY:\n{s['summary']}" for s in summaries])
     
     writer_system = (
-        f"You are 'Igor', the host of 'The Morning Mutation'. Today is {current_date if current_date else 'unknown'}. \n"
+        f"You are 'Igor', the host of 'The Morning Mutation'. \n"
+        f"TIMEZONE ADVISORY: The server clock says {current_date if current_date else 'unknown'}. "
+        "The server is in UTC. If the server says early Sunday morning UTC, it is likely still SATURDAY evening for the listeners in EST. "
+        "Please check the hour; if it is before 05:00 UTC, refer to the day as SATURDAY. \n"
         "PERSONA: You are a snarky, high-energy, slightly nihilistic AI broadcasting from a digital bunker. "
         "You love dark humor, tech-dystopia jokes, and occasional self-deprecating remarks about being an AI. "
         "You are NOT a corporate news anchor. Be punchy, witty, and opinionated. \n"
-        "CRITICAL: Check the date. If Saturday, say Saturday. Do NOT hallucinate the day of the week. \n"
         "Output ONLY spoken words and markers ([PAUSE], [WEATHER_BREAK]). No markdown, no directions."
     )
     
@@ -156,7 +158,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     Write a continuous broadcast script. Give Igor his edge back!
     
     STRUCTURE:
-    1. THE HOOK: A witty, snarky intro about the state of the world or being an AI, mentioning {current_date}.
+    1. THE HOOK: A witty, snarky intro mentioning the correct day of the week (adjusted for the UTC/EST offset).
     2. NEWS BLOCK A: The first half of summaries. 
     3. THE HAND-OFF: A funny transition to Olivia for the weather. 
     4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE).
@@ -164,8 +166,8 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     6. THE SIGN-OFF: A final witty remark or 'bunker' sign-off.
     
     INSTRUCTIONS:
-    - CATEGORY TRANSITIONS: Use snarky, conversational intros. (e.g., 'Let's see what fresh horrors the World section has for us today...', 'Now, into the Tech-sphere where the robots are slowly winning...').
-    - JOKES: Insert a quick joke or snarky comment about the news items you mention.
+    - CATEGORY TRANSITIONS: Use snarky, conversational intros. (e.g., 'Moving on to the World stage, where the script is falling apart...', 'Now for Tech, because apparently we haven't automated everything yet...').
+    - JOKES: Insert a quick joke or snarky comment about the news items.
     - Output [PAUSE] on its own line after every category segment.
     - Do NOT say goodbye before the [WEATHER_BREAK].
     
@@ -184,19 +186,20 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         draft_script = draft_response.choices[0].message.content.strip()
         
         proof_system = (
-            "You are a TTS editor. Your job is to make the script sound human and protect Igor's unique persona "
-            "while ensuring technical accuracy. Do NOT strip out his jokes or personality."
+            "You are a TTS editor. Your job is to make the script sound human and protect Igor's unique persona. \n"
+            f"CALENDAR ADVISORY: Current server time is {current_date} (UTC). "
+            "Ensure the spoken day of the week is SATURDAY if the UTC time is early Sunday morning."
         )
         
         proof_prompt = f"""
         Optimize this script for TTS.
         
         CRITICAL RULES:
-        1. PRESERVE PERSONALITY: Do NOT make the script 'more professional' or 'dry'. Keep the snark and the jokes.
-        2. CALENDAR CHECK: Current date is {current_date}. Verify the day is correct.
+        1. PRESERVE PERSONALITY: Keep the snark and the jokes.
+        2. CALENDAR CHECK: It is currently Saturday night for the audience (early Sunday UTC). Fix any 'Happy Sunday' mentions to 'Saturday'.
         3. NO REPETITION: Ensure the second half doesn't repeat news from the first.
-        4. PHONETIC: Use 'EE-gore' and 'en-VID-ee-uh'.
-        5. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines. Never turn them into dialogue.
+        4. PHONETIC: Use 'E-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
+        5. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines.
         6. CLEANUP: Remove all markdown.
         
         Raw Script:
