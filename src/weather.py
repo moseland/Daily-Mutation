@@ -110,6 +110,8 @@ def generate_weather_script(weather_data, config=None, current_date=None):
        Do not skip days or mislabel the day of the week for the upcoming dates.
     2. Focus on today first, then give a quick look at the next two specific dates.
     3. Use Fahrenheit only. NO introductory fluff like 'Here is the weather'.
+    4. Always start with 'Thank you Igor.'
+    5. Always end with 'And back to you Igor.'
     """
     
     try:

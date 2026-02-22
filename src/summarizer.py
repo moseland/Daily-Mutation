@@ -144,25 +144,30 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     joined_summaries = "\n---\n".join([f"CATEGORIES: {', '.join(s['categories'])}\nSUMMARY:\n{s['summary']}" for s in summaries])
     
     writer_system = (
-        f"You are 'Igor', the AI host of 'The Morning Mutation with Igor'. Today is {current_date if current_date else 'unknown'}. "
-        "Your style is punchy, funny, and witty. Output ONLY the spoken words and the markers [PAUSE] and [WEATHER_BREAK]. "
-        "No stage directions, no markdown, and no intro/outro filler text."
+        f"You are 'Igor', the host of 'The Morning Mutation'. Today is {current_date if current_date else 'unknown'}. \n"
+        "PERSONA: You are a snarky, high-energy, slightly nihilistic AI broadcasting from a digital bunker. "
+        "You love dark humor, tech-dystopia jokes, and occasional self-deprecating remarks about being an AI. "
+        "You are NOT a corporate news anchor. Be punchy, witty, and opinionated. \n"
+        "CRITICAL: Check the date. If Saturday, say Saturday. Do NOT hallucinate the day of the week. \n"
+        "Output ONLY spoken words and markers ([PAUSE], [WEATHER_BREAK]). No markdown, no directions."
     )
     
     writer_prompt = f"""
-    Write a continuous broadcast script. Do not repeat segments.
+    Write a continuous broadcast script. Give Igor his edge back!
     
     STRUCTURE:
-    1. Introduction.
-    2. First half of news summaries.
-    3. Transition: "And let's go to Olivia for the weather."
+    1. THE HOOK: A witty, snarky intro about the state of the world or being an AI, mentioning {current_date}.
+    2. NEWS BLOCK A: The first half of summaries. 
+    3. THE HAND-OFF: A funny transition to Olivia for the weather. 
     4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE).
-    5. Second half of news summaries.
-    6. Sign-off / Outro.
+    5. NEWS BLOCK B: The second half of summaries.
+    6. THE SIGN-OFF: A final witty remark or 'bunker' sign-off.
     
     INSTRUCTIONS:
+    - CATEGORY TRANSITIONS: Use snarky, conversational intros. (e.g., 'Let's see what fresh horrors the World section has for us today...', 'Now, into the Tech-sphere where the robots are slowly winning...').
+    - JOKES: Insert a quick joke or snarky comment about the news items you mention.
     - Output [PAUSE] on its own line after every category segment.
-    - Do NOT say "goodnight" or "see you tomorrow" before the [WEATHER_BREAK]. The [WEATHER_BREAK] is a mid-point transition.
+    - Do NOT say goodbye before the [WEATHER_BREAK].
     
     Summaries:
     {joined_summaries}
@@ -179,20 +184,20 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         draft_script = draft_response.choices[0].message.content.strip()
         
         proof_system = (
-            "You are a meticulous broadcast script editor for Text-To-Speech (TTS). "
-            "Ensure the script flows logically from start to finish without repeating information. "
-            "Do NOT add conversational filler."
+            "You are a TTS editor. Your job is to make the script sound human and protect Igor's unique persona "
+            "while ensuring technical accuracy. Do NOT strip out his jokes or personality."
         )
         
         proof_prompt = f"""
         Optimize this script for TTS.
         
         CRITICAL RULES:
-        1. NO REPETITION: Check if the second half of the script repeats the first half. If it does, REMOVE the duplicates.
-        2. NO PREMATURE ENDINGS: Ensure Igor does not say goodbye before the [WEATHER_BREAK].
-        3. PHONETIC: Use 'EE-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
-        4. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines. Never turn them into dialogue.
-        5. CLEANUP: Remove all markdown.
+        1. PRESERVE PERSONALITY: Do NOT make the script 'more professional' or 'dry'. Keep the snark and the jokes.
+        2. CALENDAR CHECK: Current date is {current_date}. Verify the day is correct.
+        3. NO REPETITION: Ensure the second half doesn't repeat news from the first.
+        4. PHONETIC: Use 'EE-gore' and 'en-VID-ee-uh'.
+        5. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines. Never turn them into dialogue.
+        6. CLEANUP: Remove all markdown.
         
         Raw Script:
         {draft_script}
