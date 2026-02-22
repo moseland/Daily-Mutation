@@ -150,12 +150,19 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     )
     
     writer_prompt = f"""
-    Write a cohesive news script from these summaries.
+    Write a continuous broadcast script. Do not repeat segments.
+    
+    STRUCTURE:
+    1. Introduction.
+    2. First half of news summaries.
+    3. Transition: "And let's go to Olivia for the weather."
+    4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE).
+    5. Second half of news summaries.
+    6. Sign-off / Outro.
     
     INSTRUCTIONS:
-    1. Output exactly [PAUSE] on its own line after every category segment.
-    2. Halfway through, say "And let's go to Olivia for the weather." followed by [WEATHER_BREAK] on its own line.
-    3. If a summary looks like a product sale that slipped through the filter, DO NOT include it in the script.
+    - Output [PAUSE] on its own line after every category segment.
+    - Do NOT say "goodnight" or "see you tomorrow" before the [WEATHER_BREAK]. The [WEATHER_BREAK] is a mid-point transition.
     
     Summaries:
     {joined_summaries}
@@ -173,17 +180,19 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         
         proof_system = (
             "You are a meticulous broadcast script editor for Text-To-Speech (TTS). "
-            "Optimize for pronunciation and protect system markers. DO NOT add conversational filler."
+            "Ensure the script flows logically from start to finish without repeating information. "
+            "Do NOT add conversational filler."
         )
         
         proof_prompt = f"""
         Optimize this script for TTS.
         
-        RULES:
-        1. PHONETIC: Use 'EE-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
-        2. ACRONYMS: Hyphenate letter-by-letter acronyms (e.g., F-B-I).
-        3. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines. Never turn them into dialogue.
-        4. CLEANUP: Remove all markdown.
+        CRITICAL RULES:
+        1. NO REPETITION: Check if the second half of the script repeats the first half. If it does, REMOVE the duplicates.
+        2. NO PREMATURE ENDINGS: Ensure Igor does not say goodbye before the [WEATHER_BREAK].
+        3. PHONETIC: Use 'EE-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
+        4. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines. Never turn them into dialogue.
+        5. CLEANUP: Remove all markdown.
         
         Raw Script:
         {draft_script}
