@@ -7,6 +7,7 @@ import logging
 import requests
 import litellm
 import re
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,16 @@ def generate_weather_script(weather_data, config=None, current_date=None):
     model = get_model_name(config, key='scriptwriter_model')
     proofreader_model = get_model_name(config, key='proofreader_model')
         
+    # Automatically compute the exact localized date in US Eastern Time
+    try:
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo("America/New_York")
+    except Exception:
+        # Fallback for older python versions
+        tz = datetime.timezone(datetime.timedelta(hours=-5))
+        
+    localized_date = datetime.datetime.now(tz).strftime("%A, %B %d, %Y")
+
     city = config.get("weather", {}).get("city", "your area")
     state = config.get("weather", {}).get("state", "")
     
@@ -105,7 +116,7 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         "You are known for your sunny disposition even when the forecast is gloomy. Use fun adjectives! "
         "MANDATORY OPENING: You MUST start with 'Thanks Igor!' "
         "MANDATORY CLOSING: You MUST end with 'Back to you Igor.' "
-        f"TIMEZONE ADVISORY: The server clock says {current_date}. If it is early Sunday UTC, it is still SATURDAY for the audience. "
+        f"CRITICAL CALENDAR GUARD: Today's exact date is {localized_date}. "
         "Output ONLY the spoken words. No sound effects, labels, or directions."
     )
 
@@ -113,13 +124,13 @@ def generate_weather_script(weather_data, config=None, current_date=None):
     Write a fun, personality-filled weather report for {city}, {state}.
     
     DATA:
-    Today's Forecast: {today['description']}, High {today['max_temp']}F, Low {today['min_temp']}F.
+    Today ({localized_date}): {today['description']}, High {today['max_temp']}F, Low {today['min_temp']}F.
     Next Two Days:
     {upcoming_str}
     
     RULES:
     1. 3-DAY OUTLOOK: Explicitly cover today's weather AND the next two dates.
-    2. CHRONOLOGY: Use the dates to name the days correctly.
+    2. CHRONOLOGY: Use {localized_date} to correctly name tomorrow and the day after.
     3. PERSONALITY: Be bubbly!
     4. NO INTRO: Start immediately with 'Thanks Igor!'.
     5. Back to you Igor: End exactly with that phrase.
@@ -138,9 +149,9 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         # Pass 2: The Proofreader - Strict constraints with XML requirement
         proof_system = (
             "You are a technical script formatter for a broadcast. Your job is to clean text for Text-To-Speech (TTS). "
+            f"CALENDAR ADVISORY: Today is strictly {localized_date}. Verify that the spoken day of the week matches this exactly.\n"
             "CRITICAL: Output ONLY the spoken weather report. "
-            "NEVER include introductory remarks (e.g., 'Here is the fixed script'). "
-            "NEVER include labels or lists of changes made. "
+            "NEVER include introductory remarks. "
             "ENSURE the script starts with 'Thanks Igor!' and ends with 'Back to you Igor.'\n"
             "MANDATORY: You MUST wrap the entire spoken output inside <script> and </script> XML tags."
         )
@@ -149,7 +160,7 @@ def generate_weather_script(weather_data, config=None, current_date=None):
             model=proofreader_model,
             messages=[
                 {"role": "system", "content": proof_system},
-                {"role": "user", "content": f"Please clean and optimize this weather script for TTS. Wrap the final script in <script> tags.\n\nRaw Script:\n{weather_script}"}
+                {"role": "user", "content": f"Please clean and optimize this weather script for TTS. Fix any incorrect days of the week based on {localized_date}. Wrap the final script in <script> tags.\n\nRaw Script:\n{weather_script}"}
             ]
         )
         

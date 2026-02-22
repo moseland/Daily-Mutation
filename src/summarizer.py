@@ -7,6 +7,7 @@ import logging
 import litellm
 import os
 import re
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,16 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     model = get_model_name(config, key='scriptwriter_model')
     proofreader_model = get_model_name(config, key='proofreader_model')
     
+    # Automatically compute the exact localized date in US Eastern Time
+    try:
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo("America/New_York")
+    except Exception:
+        # Fallback for older python versions
+        tz = datetime.timezone(datetime.timedelta(hours=-5))
+        
+    localized_date = datetime.datetime.now(tz).strftime("%A, %B %d, %Y")
+    
     if not summaries:
         return "Hey folks, EE-gore here! We didn't find any breaking news today, so go back to sleep. Just kidding, have a great day!"
         
@@ -154,12 +165,10 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     
     writer_system = (
         f"You are 'Igor', the host of 'The Morning Mutation'. \n"
-        f"TIMEZONE ADVISORY: The server clock says {current_date if current_date else 'unknown'}. "
-        "The server is in UTC. If the server says early Sunday morning UTC, it is likely still SATURDAY evening for the listeners in EST. "
-        "Please check the hour; if it is before 05:00 UTC, refer to the day as SATURDAY. \n"
-        "PERSONA: You are a snarky, high-energy, slightly nihilistic AI broadcasting from a digital bunker. "
-        "You love dark humor, tech-dystopia jokes, and occasional self-deprecating remarks about being an AI. "
-        "You are NOT a corporate news anchor. Be punchy, witty, and opinionated. \n"
+        f"CRITICAL CALENDAR GUARD: Today's date is strictly {localized_date}. Use this exact day of the week in your greetings.\n"
+        "PERSONA: You are an old-school, shock-jock style radio host AI. Think Howard Stern mixed with a slightly dark, cynical edge. "
+        "You are high-energy, witty, opinionated, and love poking fun at the absurdity of the news without being overly bleak or 'doomsday'. "
+        "You are NOT a corporate news anchor. \n"
         "Output ONLY spoken words and markers ([PAUSE], [WEATHER_BREAK]). No markdown, no directions."
     )
     
@@ -167,15 +176,15 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     Write a continuous broadcast script. Give Igor his edge back!
     
     STRUCTURE:
-    1. THE HOOK: A witty, snarky intro mentioning the correct day of the week (adjusted for the UTC/EST offset).
+    1. THE HOOK: A witty, snarky intro acknowledging today is {localized_date}.
     2. NEWS BLOCK A: The first half of summaries. 
     3. THE HAND-OFF: A funny transition to Olivia for the weather. 
     4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE).
     5. NEWS BLOCK B: The second half of summaries.
-    6. THE SIGN-OFF: A final witty remark or 'bunker' sign-off.
+    6. THE SIGN-OFF: A final witty remark or radio sign-off.
     
     INSTRUCTIONS:
-    - CATEGORY TRANSITIONS: Use snarky, conversational intros. (e.g., 'Moving on to the World stage, where the script is falling apart...', 'Now for Tech, because apparently we haven't automated everything yet...').
+    - CATEGORY TRANSITIONS: You MUST explicitly announce the category you are transitioning into using natural radio-host phrases. (e.g., 'And next in World news...', 'Moving over to the Tech world...', 'Let's see what's happening in Entertainment...'). Do not just start reading the news without announcing the section.
     - JOKES: Insert a quick joke or snarky comment about the news items.
     - Output [PAUSE] on its own line after every category segment.
     - Do NOT say goodbye before the [WEATHER_BREAK].
@@ -196,8 +205,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         
         proof_system = (
             "You are a TTS editor. Your job is to make the script sound human and protect Igor's unique persona. \n"
-            f"CALENDAR ADVISORY: Current server time is {current_date} (UTC). "
-            "Ensure the spoken day of the week is SATURDAY if the UTC time is early Sunday morning.\n"
+            f"CALENDAR ADVISORY: Today is strictly {localized_date}. Verify that the spoken day of the week matches this exactly.\n"
             "MANDATORY: You MUST wrap the entire spoken output inside <script> and </script> XML tags."
         )
         
@@ -205,8 +213,8 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         Optimize this script for TTS.
         
         CRITICAL RULES:
-        1. PRESERVE PERSONALITY: Keep the snark and the jokes.
-        2. CALENDAR CHECK: It is currently Saturday night for the audience (early Sunday UTC). Fix any 'Happy Sunday' mentions to 'Saturday'.
+        1. PRESERVE PERSONALITY: Keep the shock-jock, cynical edge and the jokes.
+        2. CALENDAR CHECK: Today is {localized_date}. Fix any greetings that state the wrong day of the week.
         3. NO REPETITION: Ensure the second half doesn't repeat news from the first.
         4. PHONETIC: Use 'EE-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
         5. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines.
