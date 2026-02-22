@@ -186,7 +186,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     
     INSTRUCTIONS:
     - CATEGORY TRANSITIONS: You MUST explicitly announce the category you are transitioning into using natural radio-host phrases. (e.g., 'And next in World news...', 'Moving over to the Tech world...', 'Let's see what's happening in Entertainment...'). Do not just start reading the news without announcing the section.
-    - JOKES: Insert a quick joke or snarky comment about the news items, but keep it light and fun, and only make jokes about the news items that are being included in the broadcast.
+    - JOKES: Insert a quick joke or snarky comment about the news items.
     - Output [PAUSE] on its own line after every category segment.
     - Do NOT say goodbye before the [WEATHER_BREAK].
     
