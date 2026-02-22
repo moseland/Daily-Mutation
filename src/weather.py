@@ -12,13 +12,21 @@ logger = logging.getLogger(__name__)
 
 def clean_llm_output(text):
     """
-    Strips LLM intros and metadata from weather scripts.
+    Strips LLM intros, metadata, labels, and markdown from weather scripts.
+    Ensures the script starts exactly where the dialogue starts.
     """
     if not text:
         return ""
-    text = re.sub(r'^(Final|Polished|Refined|Script|Here|Sure|The).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove common lead-ins and labels like "Refined Script:", "Here is the report:", etc.
+    # This regex looks for lines starting with common LLM labels followed by a colon
+    text = re.sub(r'^(Final|Polished|Refined|Script|Report|Here|Sure|The|Based|Correction).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove markdown formatting (bold, italics) which TTS might try to interpret literally
     text = text.replace("**", "").replace("*", "").replace("__", "")
-    return text.strip()
+    
+    # Final trim to remove whitespace or accidental trailing quotes
+    return text.strip().strip('"').strip("'")
 
 def get_weather(latitude, longitude):
     """
@@ -89,12 +97,12 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         upcoming_str += f"- Date: {day['date']}, Conditions: {day['description']}, High: {day['max_temp']}F\n"
         
     system_instruction = (
-        "You are 'Olivia', the upbeat, bubbly, and high-energy weather reporter for 'The Morning Mutation'. "
+        "You are 'Olivia', the upbeat, and high-energy weather reporter for 'The Morning Mutation'. "
         "You are known for your sunny disposition even when the forecast is gloomy. Use fun adjectives! "
         "MANDATORY OPENING: You MUST start with 'Thanks Igor!' "
         "MANDATORY CLOSING: You MUST end with 'Back to you Igor.' "
         f"TIMEZONE ADVISORY: The server clock says {current_date}. If it is early Sunday UTC, it is still SATURDAY for the audience. "
-        "Output ONLY the spoken words. No sound effects or directions."
+        "Output ONLY the spoken words. No sound effects, labels, or directions."
     )
 
     user_prompt = f"""
@@ -106,9 +114,9 @@ def generate_weather_script(weather_data, config=None, current_date=None):
     {upcoming_str}
     
     RULES:
-    1. 3-DAY OUTLOOK: You must explicitly cover today's weather AND the weather for the next two dates provided. 
-    2. CHRONOLOGY: Use the dates to name the days correctly. If today is Saturday, tomorrow is Sunday, and the day after is Monday.
-    3. PERSONALITY: Be bubbly! Use phrases like 'grab your umbrellas' or 'soak up that vitamin D'.
+    1. 3-DAY OUTLOOK: Explicitly cover today's weather AND the next two dates.
+    2. CHRONOLOGY: Use the dates to name the days correctly.
+    3. PERSONALITY: Be bubbly!
     4. NO INTRO: Start immediately with 'Thanks Igor!'.
     5. Back to you Igor: End exactly with that phrase.
     """
@@ -123,21 +131,26 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         )
         weather_script = response.choices[0].message.content.strip()
         
+        # Pass 2: The Proofreader - Strict constraints to prevent meta-commentary
         proof_system = (
-            "You are a script editor. Ensure Olivia sounds bubbly and energetic. "
-            "Check that she opens with 'Thanks Igor!' and ends with 'Back to you Igor.' "
-            "Verify that she covers all three days of data provided."
+            "You are a technical script formatter for a broadcast. Your job is to clean text for Text-To-Speech (TTS). "
+            "CRITICAL: Output ONLY the spoken weather report. "
+            "NEVER include introductory remarks (e.g., 'Here is the fixed script'). "
+            "NEVER include labels or lists of changes made. "
+            "ENSURE the script starts with 'Thanks Igor!' and ends with 'Back to you Igor.'"
         )
         
         proof_response = litellm.completion(
             model=proofreader_model,
             messages=[
                 {"role": "system", "content": proof_system},
-                {"role": "user", "content": weather_script}
+                {"role": "user", "content": f"Please clean and optimize this weather script for TTS: {weather_script}"}
             ]
         )
         
+        # Apply the hardened cleaning utility to the result
         return clean_llm_output(proof_response.choices[0].message.content)
+        
     except Exception as e:
         logger.error(f"Failed to generate weather script: {e}")
         return f"Thanks Igor! Today in {city} expect {today['description']} with a high of {today['max_temp']}. Back to you Igor."
