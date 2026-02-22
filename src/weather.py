@@ -53,7 +53,7 @@ def get_weather(latitude, longitude):
         for i in range(len(daily['time'])):
             wcode = daily['weathercode'][i]
             forecasts.append({
-                "date": daily['time'][i],
+                "date": daily['time'][i], # Format: YYYY-MM-DD
                 "max_temp": daily['temperature_2m_max'][i],
                 "min_temp": daily['temperature_2m_min'][i],
                 "description": weather_descriptions.get(wcode, "Variable conditions")
@@ -82,26 +82,34 @@ def generate_weather_script(weather_data, config=None, current_date=None):
     state = config.get("weather", {}).get("state", "")
     
     today = weather_data['today']
-    upcoming_str = "\n".join([f"- {day['date']}: {day['description']}, High {day['max_temp']}F" for day in weather_data['upcoming']])
+    # Explicitly mapping date strings to help Olivia's internal calendar
+    upcoming_data = weather_data['upcoming']
+    
+    upcoming_str = ""
+    for day in upcoming_data:
+        upcoming_str += f"- Date: {day['date']}, Conditions: {day['description']}, High: {day['max_temp']}F\n"
         
     system_instruction = (
-        "You are 'Olivia', the upbeat weather reporter for 'The Morning Mutation'. "
+        "You are 'Olivia', the upbeat, qwirky, and fun weather reporter for 'The Morning Mutation'. "
         "Output ONLY the spoken words. End exactly with 'And back to you Igor.' "
-        "Do not include sound effect cues, markdown, or introductory chatter."
+        "PRONUNCIATION: Use 'EE-gore' for Igor."
     )
 
     user_prompt = f"""
-    Write a fun weather update for {city}, {state} based on this data:
+    Write a fun weather update for {city}, {state}.
     
+    CURRENT CONTEXT:
     Today's Date: {current_date if current_date else 'unknown'}
-    Current Forecast: {today['description']}, High {today['max_temp']}F, Low {today['min_temp']}F.
-    Outlook Later This Week:
+    Today's Forecast: {today['description']}, High {today['max_temp']}F, Low {today['min_temp']}F.
+    
+    UPCOMING OUTLOOK (Be chronologically accurate):
     {upcoming_str}
     
-    Rules:
-    - Focus on today, briefly mention the outlook.
-    - Use Fahrenheit only.
-    - NO intro like 'Here is the report'.
+    RULES:
+    1. BE EXPLICIT WITH DAYS: Check the 'Today's Date' provided. If today is Saturday, then Tomorrow is Sunday. 
+       Do not skip days or mislabel the day of the week for the upcoming dates.
+    2. Focus on today first, then give a quick look at the next two specific dates.
+    3. Use Fahrenheit only. NO introductory fluff like 'Here is the weather'.
     """
     
     try:
@@ -114,10 +122,9 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         )
         weather_script = response.choices[0].message.content.strip()
         
-        # Second Pass for cleanup
         proof_system = (
-            "You are a script editor. Strip all labels, intro prose, and markdown. "
-            "Output ONLY the final spoken weather report. End with 'And back to you Igor.'"
+            "You are a weather script editor. Verify that the days of the week match the dates provided "
+            "based on the current date. Strip all intros and labels. Output ONLY the spoken report."
         )
         
         proof_response = litellm.completion(

@@ -56,19 +56,27 @@ def summarize_clusters(clusters, config=None):
             text_payload += f"CONTENT: {article.get('text', '')[:3000]}\n\n"
 
         system_instruction = (
-            "You are an expert news editor. Your task is to synthesize multiple articles "
-            "into one cohesive, objective, and engaging summary. Avoid shopping deals or fluff."
+            "You are an expert news editor and filter. Your task is to synthesize multiple articles "
+            "into one cohesive, objective, and engaging summary. \n\n"
+            "CRITICAL QUALITY FILTER: \n"
+            "- IDENTIFY AND DISCARD 'Fluff': shopping deals, sales, gift guides, product 'best-of' lists, "
+            "coupons, or clickbait listicles. If the provided sources are fluff, respond ONLY with 'DISCARD'.\n"
+            "- CATEGORIZATION: Be precise. Use 'Entertainment' for movies/games, 'Tech' for hardware/software, "
+            "and 'World' ONLY for global geopolitical events or major non-aligned international news."
         )
 
         user_prompt = f"""
-        Synthesize the following sources into 1-2 paragraphs.
+        Analyze and synthesize the following sources. 
         
-        REQUIRED FORMAT:
-        CATEGORIES: [List applicable categories from: Tech, World, Political, Entertainment, Sports]
+        STRICT CATEGORY LIST: Tech, World, Political, Entertainment, Sports.
+        
+        If the content is a shopping deal or fluff, output: DISCARD
+        Otherwise, use this format:
+        CATEGORIES: [List]
         SUMMARY:
         [Your Synthesized Summary]
         
-        Sources to synthesize:
+        Sources:
         {text_payload}
         """
         
@@ -82,7 +90,12 @@ def summarize_clusters(clusters, config=None):
             )
             response_text = response.choices[0].message.content.strip()
             
-            categories = [feed_name]
+            # Skip discarded fluff
+            if "DISCARD" in response_text.upper() and len(response_text) < 20:
+                logger.info(f"Discarding cluster {i+1} as shopping fluff.")
+                continue
+
+            categories = ["World"]
             summary_text = response_text
             
             if "CATEGORIES:" in response_text and "SUMMARY:" in response_text:
@@ -110,15 +123,9 @@ def summarize_clusters(clusters, config=None):
                 "summary": summary_text,
                 "articles": article_links
             })
-            logger.info(f"Synthesized cluster {i+1}/{len(clusters)}.")
             
         except Exception as e:
             logger.error(f"Failed to summarize cluster {i}: {e}")
-            summaries.append({
-                "feed_name": feed_name,
-                "summary": "Error synthesizing these sources.",
-                "articles": []
-            })
             
     return summaries
 
@@ -136,9 +143,8 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     logger.info("Generating final broadcast script...")
     joined_summaries = "\n---\n".join([f"CATEGORIES: {', '.join(s['categories'])}\nSUMMARY:\n{s['summary']}" for s in summaries])
     
-    # PASS 1: THE WRITER
     writer_system = (
-        f"You are 'Igor', the AI host of 'The Morning Mutation with Igor'. Date: {current_date if current_date else 'unknown'}. "
+        f"You are 'Igor', the AI host of 'The Morning Mutation with Igor'. Today is {current_date if current_date else 'unknown'}. "
         "Your style is punchy, funny, and witty. Output ONLY the spoken words and the markers [PAUSE] and [WEATHER_BREAK]. "
         "No stage directions, no markdown, and no intro/outro filler text."
     )
@@ -146,11 +152,10 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     writer_prompt = f"""
     Write a cohesive news script from these summaries.
     
-    CRITICAL INSTRUCTIONS:
-    1. Output exactly [PAUSE] on its own line after every segment.
+    INSTRUCTIONS:
+    1. Output exactly [PAUSE] on its own line after every category segment.
     2. Halfway through, say "And let's go to Olivia for the weather." followed by [WEATHER_BREAK] on its own line.
-    3. Skip any categories that are just shopping deals or product sales.
-    4. Only joke about articles mentioned in the summary.
+    3. If a summary looks like a product sale that slipped through the filter, DO NOT include it in the script.
     
     Summaries:
     {joined_summaries}
@@ -166,11 +171,9 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         )
         draft_script = draft_response.choices[0].message.content.strip()
         
-        # PASS 2: THE TTS OPTIMIZER
         proof_system = (
             "You are a meticulous broadcast script editor for Text-To-Speech (TTS). "
-            "Your ONLY goal is to optimize for pronunciation and protect system markers. "
-            "DO NOT add conversational filler like 'Here is your polished script'."
+            "Optimize for pronunciation and protect system markers. DO NOT add conversational filler."
         )
         
         proof_prompt = f"""
@@ -179,10 +182,8 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         RULES:
         1. PHONETIC: Use 'EE-gore' for Igor and 'en-VID-ee-uh' for NVIDIA. 
         2. ACRONYMS: Hyphenate letter-by-letter acronyms (e.g., F-B-I).
-        3. MARKERS: The tags [PAUSE] and [WEATHER_BREAK] are SYSTEM COMMANDS. 
-           - They MUST remain on their own lines. 
-           - NEVER change them into dialogue (do not say "Let's take a pause").
-        4. CLEANUP: Remove all markdown, sound effect cues, or domain extensions like '.com'.
+        3. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines. Never turn them into dialogue.
+        4. CLEANUP: Remove all markdown.
         
         Raw Script:
         {draft_script}
