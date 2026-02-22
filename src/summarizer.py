@@ -179,7 +179,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     1. THE HOOK: A witty, snarky intro acknowledging today is {localized_date}.
     2. NEWS BLOCK A: The first half of summaries. 
     3. THE HAND-OFF: A funny transition to Olivia for the weather. 
-    4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE).
+    4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE), MUST be in the middle of the script, nicely transitioning to the weather.
     5. NEWS BLOCK B: The second half of summaries.
     6. THE SIGN-OFF: A final witty remark or radio sign-off.
     
