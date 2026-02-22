@@ -6,16 +6,30 @@ conversational weather report using LLM personalities.
 import logging
 import requests
 import litellm
+import re
 
 logger = logging.getLogger(__name__)
+
+def clean_llm_output(text):
+    """
+    Strips LLM intros and metadata from weather scripts.
+    """
+    if not text:
+        return ""
+    text = re.sub(r'^(Final|Polished|Refined|Script|Here|Sure|The).*?:\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    text = text.replace("**", "").replace("*", "").replace("__", "")
+    return text.strip()
 
 def get_weather(latitude, longitude):
     """
     Fetches the daily weather forecast from Open-Meteo API.
-    Updated to return Fahrenheit and 3 days of data.
+    Returns Fahrenheit and 3 days of data.
     """
-    # Added temperature_unit=fahrenheit and increased forecast_days to 3
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=fahrenheit&timezone=auto&forecast_days=3"
+    url = (
+        f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}"
+        f"&daily=temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=fahrenheit"
+        f"&timezone=auto&forecast_days=3"
+    )
     
     try:
         response = requests.get(url, timeout=10)
@@ -35,7 +49,6 @@ def get_weather(latitude, longitude):
             95: "Thunderstorm"
         }
 
-        # Parse current day + upcoming days
         forecasts = []
         for i in range(len(daily['time'])):
             wcode = daily['weathercode'][i]
@@ -56,14 +69,14 @@ def get_weather(latitude, longitude):
 
 def generate_weather_script(weather_data, config=None, current_date=None):
     """
-    Generates a conversational weather script using the LLM.
-    Updated to include the 'Later this week' outlook in Fahrenheit.
+    Generates Olivia's upbeat weather report.
     """
     if not weather_data:
-        return "And looking at the weather... well, my sensors are down, so just stick your head out the window and figure it out!"
+        return "And looking at the weather... well, my sensors are down! Just check your phone. Back to you Igor."
         
     from src.summarizer import get_model_name
     model = get_model_name(config, key='scriptwriter_model')
+    proofreader_model = get_model_name(config, key='proofreader_model')
         
     city = config.get("weather", {}).get("city", "your area")
     state = config.get("weather", {}).get("state", "")
@@ -71,73 +84,59 @@ def generate_weather_script(weather_data, config=None, current_date=None):
     today = weather_data['today']
     upcoming_str = "\n".join([f"- {day['date']}: {day['description']}, High {day['max_temp']}F" for day in weather_data['upcoming']])
         
-    prompt = f"""
-    You are 'Olivia', the upbeat, energetic weather reporter on 'The Morning Mutation'. 
-    Today's date is {current_date if current_date else 'unknown'}.
-    Write a short and fun weather update for {city}, {state}.
+    system_instruction = (
+        "You are 'Olivia', the upbeat weather reporter for 'The Morning Mutation'. "
+        "Output ONLY the spoken words. End exactly with 'And back to you Igor.' "
+        "Do not include sound effect cues, markdown, or introductory chatter."
+    )
+
+    user_prompt = f"""
+    Write a fun weather update for {city}, {state} based on this data:
     
-    Current Forecast (Today, {today['date']}): {today['description']} with a high of {today['max_temp']}F and a low of {today['min_temp']}F.
-    
-    Upcoming Outlook:
+    Today's Date: {current_date if current_date else 'unknown'}
+    Current Forecast: {today['description']}, High {today['max_temp']}F, Low {today['min_temp']}F.
+    Outlook Later This Week:
     {upcoming_str}
     
-    INSTRUCTIONS:
-    1. Focus heavily on today's weather.
-    2. Briefly mention what to expect later this week (the upcoming outlook provided).
-    3. Use ONLY Fahrenheit.
-    4. Do not include sound effect cues, stage directions, or markdown. Output only the spoken words.
-    5. End with "And back to you Igor."
+    Rules:
+    - Focus on today, briefly mention the outlook.
+    - Use Fahrenheit only.
+    - NO intro like 'Here is the report'.
     """
     
     try:
         response = litellm.completion(
             model=model,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_prompt}
+            ]
         )
         weather_script = response.choices[0].message.content.strip()
         
-        # Pass 2: Proofreader to fix repetitions and AI quirks
-        proofreader_model = get_model_name(config, key='proofreader_model')
-        proof_prompt = f"""
-        You are a weather script editor. The following is a raw weather report for 'The Morning Mutation'. 
-        Your job is to fix any weird AI-isms, awkward repetitions, or trailing sentences.
-        Make it sound natural, upbeat, and punchy. Keep it in Fahrenheit.
-        
-        CRITICAL: Output ONLY the spoken words. Do not include introductory text, markdown formatting, or labels like "Final Polished Script".
-        End with exactly: "And back to you Igor."
-        
-        Raw Script:
-        {weather_script}
-        
-        Final Polished Script:
-        """
+        # Second Pass for cleanup
+        proof_system = (
+            "You are a script editor. Strip all labels, intro prose, and markdown. "
+            "Output ONLY the final spoken weather report. End with 'And back to you Igor.'"
+        )
         
         proof_response = litellm.completion(
             model=proofreader_model,
-            messages=[{"role": "user", "content": proof_prompt}]
+            messages=[
+                {"role": "system", "content": proof_system},
+                {"role": "user", "content": weather_script}
+            ]
         )
-        content = proof_response.choices[0].message.content.strip()
         
-        # Cleanup: sometimes LLMs include the label despite instructions
-        if "Final Polished Script:" in content:
-            content = content.split("Final Polished Script:")[-1].strip()
-            
-        return content
+        return clean_llm_output(proof_response.choices[0].message.content)
     except Exception as e:
         logger.error(f"Failed to generate weather script: {e}")
         return f"And for the weather in {city}: expect {today['description']} with a high of {today['max_temp']} degrees Fahrenheit. And back to you Igor."
 
 def get_weather_broadcast(config, current_date=None):
-    """
-    Orchestrates fetching weather data and generating a conversational script.
-    
-    Returns:
-        tuple: (script_text, raw_weather_data)
-    """
     lat = config.get('weather', {}).get('latitude', 40.7128)
     lon = config.get('weather', {}).get('longitude', -74.0060)
     
-    logger.info(f"Fetching weather for lat: {lat}, lon: {lon}")
     data = get_weather(lat, lon)
     if data:
         data['city'] = config.get('weather', {}).get('city', '')
