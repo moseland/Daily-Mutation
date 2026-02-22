@@ -53,7 +53,8 @@ function renderUI(data) {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'America/New_York'
     });
     document.getElementById('broadcast-date').textContent = `Broadcast: ${dateStr}`;
 
@@ -100,7 +101,10 @@ function renderWeather(weather) {
 
             upcomingDays.forEach(day => {
                 const d = parseLocalDate(day.date);
-                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayName = d.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    timeZone: 'America/New_York'
+                });
                 html += `
                 <div class="forecast-day">
                     <span class="f-name">${dayName}</span>

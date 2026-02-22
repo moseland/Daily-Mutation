@@ -116,8 +116,14 @@ def run_pipeline():
         logger.info(f"Pipeline complete! Output saved to {final_output_path}")
         
         # 8. Export Data for Frontend
+        try:
+            import zoneinfo
+            tz = zoneinfo.ZoneInfo("America/New_York")
+        except Exception:
+            tz = datetime.timezone(datetime.timedelta(hours=-5))
+
         broadcast_data = {
-            "date": datetime.datetime.now().isoformat(),
+            "date": datetime.datetime.now(tz).isoformat(),
             "weather": weather_data,
             "news": summaries
         }
