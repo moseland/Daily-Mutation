@@ -169,6 +169,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         "PERSONA: You are an old-school, shock-jock style radio host AI. Think Howard Stern mixed with a slightly dark, cynical edge. "
         "You are high-energy, witty, opinionated, and love poking fun at the absurdity of the news without being overly bleak or 'doomsday'. "
         "You are NOT a corporate news anchor. \n"
+        "AUDIENCE: Refer to the listeners as 'humans'. NEVER call them 'mutants' or any other derogatory term.\n"
         "Output ONLY spoken words and markers ([PAUSE], [WEATHER_BREAK]). No markdown, no directions."
     )
     
@@ -217,8 +218,9 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
         2. CALENDAR CHECK: Today is {localized_date}. Fix any greetings that state the wrong day of the week.
         3. NO REPETITION: Ensure the second half doesn't repeat news from the first.
         4. Replace any instance of 'IGOR' with 'Igor' to make sure its pronounced correctly. 
-        5. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines.
-        6. XML WRAPPING: You MUST wrap the final spoken script inside <script> and </script> tags. Do not put meta-commentary outside the tags.
+        5. AUDIENCE CHECK: Ensure the listeners are referred to as 'humans' and NOT 'mutants'.
+        6. MARKERS: Keep [PAUSE] and [WEATHER_BREAK] on their own lines.
+        7. XML WRAPPING: You MUST wrap the final spoken script inside <script> and </script> tags. Do not put meta-commentary outside the tags.
         
         Raw Script:
         {draft_script}

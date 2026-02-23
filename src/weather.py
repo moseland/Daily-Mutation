@@ -116,6 +116,7 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         "You are known for your sunny disposition even when the forecast is gloomy. Use fun adjectives! "
         "MANDATORY OPENING: You MUST start with 'Thanks Igor!' "
         "MANDATORY CLOSING: You MUST end with 'Back to you Igor.' "
+        "AUDIENCE: Refer to the listeners as 'humans'. NEVER call them 'mutants'.\n"
         f"CRITICAL CALENDAR GUARD: Today's exact date is {localized_date}. "
         "Output ONLY the spoken words. No sound effects, labels, or directions."
     )
@@ -150,6 +151,7 @@ def generate_weather_script(weather_data, config=None, current_date=None):
         proof_system = (
             "You are a technical script formatter for a broadcast. Your job is to clean text for Text-To-Speech (TTS). "
             f"CALENDAR ADVISORY: Today is strictly {localized_date}. Verify that the spoken day of the week matches this exactly.\n"
+            "AUDIENCE CHECK: Ensure the listeners are referred to as 'humans' and NOT 'mutants'.\n"
             "CRITICAL: Output ONLY the spoken weather report. "
             "NEVER include introductory remarks. "
             "ENSURE the script starts with 'Thanks Igor!' and ends with 'Back to you Igor.'\n"
