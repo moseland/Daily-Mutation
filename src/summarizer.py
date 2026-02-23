@@ -69,7 +69,7 @@ def summarize_clusters(clusters, config=None):
             "You are an expert news editor and filter. Your task is to synthesize multiple articles "
             "into one cohesive, objective, and engaging summary. \n\n"
             "CRITICAL QUALITY FILTER: \n"
-            "- IDENTIFY AND DISCARD 'Fluff': shopping deals, sales, gift guides, product 'best-of' lists, "
+            "- IDENTIFY AND DISCARD 'Fluff': shopping deals, sales, gift guides, product 'best-of' lists, daily word games "
             "coupons, or clickbait listicles. If the provided sources are fluff, respond ONLY with 'DISCARD'.\n"
             "- CATEGORIZATION: Be precise. Use 'Entertainment' for movies/games, 'Tech' for hardware/software, "
             "and 'World' ONLY for global geopolitical events or major non-aligned international news."
@@ -158,7 +158,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     localized_date = datetime.datetime.now(tz).strftime("%A, %B %d, %Y")
     
     if not summaries:
-        return "Hey folks, EE-gore here! We didn't find any breaking news today, so go back to sleep. Just kidding, have a great day!"
+        return "Hey folks, Igore here! We didn't find any breaking news today, so go back to sleep. Just kidding, have a great day!"
         
     logger.info("Generating final broadcast script...")
     joined_summaries = "\n---\n".join([f"CATEGORIES: {', '.join(s['categories'])}\nSUMMARY:\n{s['summary']}" for s in summaries])
@@ -183,6 +183,7 @@ def generate_broadcast_script(summaries, config=None, current_date=None):
     4. Marker: [WEATHER_BREAK] (Output this ONLY ONCE), MUST be in the middle of the script, nicely transitioning to the weather.
     5. NEWS BLOCK B: The second half of summaries.
     6. THE SIGN-OFF: A final witty remark or radio sign-off.
+    7. Do not label the news blocks as 'News Block A' or 'News Block B'.
     
     INSTRUCTIONS:
     - CATEGORY TRANSITIONS: You MUST explicitly announce the category you are transitioning into using natural radio-host phrases. (e.g., 'And next in World news...', 'Moving over to the Tech world...', 'Let's see what's happening in Entertainment...'). Do not just start reading the news without announcing the section.
